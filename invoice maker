@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Instant Invoice Maker</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; }
+        #main { max-width: 420px; margin: 40px auto; background: #fff; border-radius: 10px; box-shadow: 0 4px 16px #0002; padding: 30px; }
+        h2 { color: #1a237e; }
+        label { display: block; margin: 12px 0 4px 0; }
+        input, button { width: 100%; padding: 8px; margin-bottom: 12px; border-radius: 5px; border: 1px solid #bbb; }
+        button { background: #1a237e; color: #fff; border: none; font-weight: bold; cursor: pointer; }
+        button:hover { background: #3949ab; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+        th, td { border: 1px solid #bbb; padding: 6px; text-align: left; }
+        th { background: #e3eafc; }
+        #invoiceArea { background: #f9f9f9; border-radius: 8px; padding: 18px; margin-top: 18px; }
+        #downloadBtn { display: none; }
+    </style>
+</head>
+<body>
+    <div id="main">
+        <h2>Instant Invoice Maker</h2>
+        <form id="invoiceForm" autocomplete="off">
+            <label for="yourName">Your Name/Business</label>
+            <input type="text" id="yourName" required placeholder="e.g. Pine City Services">
+            <label for="clientName">Client Name</label>
+            <input type="text" id="clientName" required placeholder="e.g. John Doe">
+            <label for="item">Item/Service</label>
+            <input type="text" id="item" required placeholder="e.g. Web Design">
+            <label for="amount">Amount (ZAR)</label>
+            <input type="number" id="amount" required min="1" step="any" placeholder="e.g. 1500">
+            <button type="button" id="addItemBtn">Add Item</button>
+            <table id="itemsTable" style="display:none;">
+                <thead>
+                    <tr><th>Item/Service</th><th>Amount</th><th></th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <button type="submit">Generate Invoice</button>
+        </form>
+        <div id="invoiceArea" style="display:none;"></div>
+        <button id="downloadBtn">Download Invoice (PDF)</button>
+    </div>
+    <script>
+    // Store invoice items
+    let items = [];
+
+    function updateTable() {
+        const table = document.getElementById('itemsTable');
+        const tbody = table.querySelector('tbody');
+        tbody.innerHTML = '';
+        items.forEach((it, i) => {
+            let row = document.createElement('tr');
+            row.innerHTML = `<td>${it.item}</td><td>ZAR ${parseFloat(it.amount).toFixed(2)}</td>
+                <td><button type="button" onclick="removeItem(${i})" style="background:#e53935;">Remove</button></td>`;
+            tbody.appendChild(row);
+        });
+        table.style.display = items.length ? '' : 'none';
+    }
+    window.removeItem = function(i) {
+        items.splice(i,1);
+        updateTable();
+    };
+
+    document.getElementById('addItemBtn').onclick = function() {
+        const item = document.getElementById('item').value.trim();
+        const amount = document.getElementById('amount').value;
+        if(!item || !amount || isNaN(amount) || amount<=0) return;
+        items.push({item, amount});
+        updateTable();
+        document.getElementById('item').value = '';
+        document.getElementById('amount').value = '';
+    };
+
+    document.getElementById('invoiceForm').onsubmit = function(e){
+        e.preventDefault();
+        if(items.length === 0) {
+            alert("Please add at least one item/service.");
+            return;
+        }
+        const yourName = document.getElementById('yourName').value.trim();
+        const clientName = document.getElementById('clientName').value.trim();
+        let total = items.reduce((sum, it) => sum + parseFloat(it.amount), 0);
+        let html = `<h3>Invoice</h3>
+            <p><b>From:</b> ${yourName}<br><b>To:</b> ${clientName}</p>
+            <table style="width:100%;margin-bottom:10px;">
+                <tr><th>Item/Service</th><th>Amount</th></tr>
+                ${items.map(it=>`<tr><td>${it.item}</td><td>ZAR ${parseFloat(it.amount).toFixed(2)}</td></tr>`).join('')}
+                <tr><td style="text-align:right;"><b>Total:</b></td><td><b>ZAR ${total.toFixed(2)}</b></td></tr>
+            </table>
+            <p style="font-size:13px;color:#555;">Thank you for your business!</p>
+        `;
+        document.getElementById('invoiceArea').innerHTML = html;
+        document.getElementById('invoiceArea').style.display = 'block';
+        document.getElementById('downloadBtn').style.display = 'block';
+    };
+
+    // Download invoice as PDF (using browser print)
+    document.getElementById('downloadBtn').onclick = function(){
+        let printContents = document.getElementById('invoiceArea').innerHTML;
+        let win = window.open('', '', 'width=600,height=700');
+        win.document.write('<html><head><title>Invoice</title>');
+        win.document.write('<style>body{font-family:Arial,sans-serif;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #bbb;padding:6px;}th{background:#e3eafc;}</style>');
+        win.document.write('</head><body>');
+        win.document.write(printContents);
+        win.document.write('</body></html>');
+        win.document.close();
+        win.print();
+    };
+    </script>
+</body>
+</html>
